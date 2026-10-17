@@ -1,3 +1,4 @@
+import type {GameSettings} from '../shared/videogames-kit/src/index.mjs';
 
 import { GoogleGenAI, Modality } from "@google/genai";
 
@@ -45,12 +46,15 @@ const getFromDB = async (key: string): Promise<Uint8Array | null> => {
 
 // --- SFX & CONTEXT LOGIC ---
 let sfxCtx: AudioContext | null = null;
+const activeEffects=new Set<AudioScheduledSourceNode>();
+const trackEffect=(source:AudioScheduledSourceNode)=>{activeEffects.add(source);source.onended=()=>activeEffects.delete(source);};
 const getSfxCtx = () => {
   if (!sfxCtx) sfxCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
   return sfxCtx;
 };
 
 const playTone = (freq: number, type: OscillatorType, duration: number, startTime: number = 0, volume: number = 0.1) => {
+  if(isMutedGlobal || !effectsEnabled) return;
   const ctx = getSfxCtx();
   if (ctx.state === 'suspended') ctx.resume();
   const osc = ctx.createOscillator();
@@ -60,7 +64,7 @@ const playTone = (freq: number, type: OscillatorType, duration: number, startTim
   gain.gain.setValueAtTime(volume, ctx.currentTime + startTime);
   gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + startTime + duration);
   osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(ctx.currentTime + startTime); osc.stop(ctx.currentTime + startTime + duration);
+  trackEffect(osc);osc.start(ctx.currentTime + startTime); osc.stop(ctx.currentTime + startTime + duration);
 };
 
 // --- GEMINI TTS LOGIC ---
@@ -81,8 +85,16 @@ const decodeAudioData = async (data: Uint8Array, ctx: AudioContext) => {
 
 const memoryCache = new Map<string, AudioBuffer>();
 let isMutedGlobal = false;
+let effectsEnabled = true, voiceEnabled = true;
+const activeVoice = new Set<AudioBufferSourceNode>();
 
 export const audioService = {
+  setPreferences: (value: Readonly<GameSettings>) => {
+    isMutedGlobal=value.muted; effectsEnabled=value.effects; voiceEnabled=value.voice;
+    if(isMutedGlobal||!effectsEnabled){for(const source of activeEffects)source.stop();activeEffects.clear();}
+    if(isMutedGlobal||!voiceEnabled){for(const source of activeVoice)source.stop();activeVoice.clear();window.speechSynthesis?.cancel();}
+    if(sfxCtx){if(isMutedGlobal)void sfxCtx.suspend();else if(sfxCtx.state==='suspended')void sfxCtx.resume();}
+  },
   setMuted: (muted: boolean) => {
     isMutedGlobal = muted;
   },
@@ -95,6 +107,7 @@ export const audioService = {
     playTone(783.99, 'triangle', 0.4, 0.2);
   },
   playError: () => {
+    if(isMutedGlobal || !effectsEnabled) return;
     const ctx = getSfxCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -104,7 +117,7 @@ export const audioService = {
     gain.gain.setValueAtTime(0.1, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.5);
+    trackEffect(osc);osc.start(); osc.stop(ctx.currentTime + 0.5);
   },
 
   preloadAndSave: async (text: string, lang: 'IT' | 'EN') => {
@@ -147,7 +160,7 @@ export const audioService = {
   },
 
   speakWithGemini: async (text: string, lang: 'IT' | 'EN') => {
-    if (isMutedGlobal) return;
+    if (isMutedGlobal || !voiceEnabled) return;
     const ctx = getSfxCtx();
     if (ctx.state === 'suspended') await ctx.resume();
     
@@ -166,7 +179,8 @@ export const audioService = {
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
-      source.start();
+      if(isMutedGlobal || !voiceEnabled) return;
+      activeVoice.add(source);source.onended=()=>activeVoice.delete(source);source.start();
       return new Promise(resolve => source.onended = resolve);
     } else {
       audioService.preloadAndSave(text, lang);
@@ -176,7 +190,7 @@ export const audioService = {
   },
 
   speakInstant: (text: string, lang: 'IT' | 'EN') => {
-    if (isMutedGlobal) return;
+    if (isMutedGlobal || !voiceEnabled) return;
     if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = lang === 'IT' ? 'it-IT' : 'en-US';

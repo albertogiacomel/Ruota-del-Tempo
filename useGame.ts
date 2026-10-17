@@ -1,6 +1,7 @@
+import {useGamePreferences} from './shared/game-kit';
 
 import { useState, useEffect, useRef } from 'react';
-import { GameMode, GameDifficulty, GameState, TimeItem, Language, Theme } from './types/index';
+import { GameMode, GameDifficulty, GameState, TimeItem, Language } from './types/index';
 import { generateFunFact, LOCAL_RHYMES } from './gameEngine';
 import { getStrings } from './i18n/index';
 import { audioService } from './services/audio';
@@ -8,15 +9,19 @@ import { getGameItems } from './config/constants';
 
 export const useGame = () => {
   const [mode, setMode] = useState<GameMode>(GameMode.DAYS);
-  const [difficulty, setDifficulty] = useState<GameDifficulty>(GameDifficulty.EASY);
+  const {store: kitStore, preferences: kitPreferences, effectiveTheme: theme} = useGamePreferences('ruota-del-tempo');
+  const difficulty = kitPreferences.difficulty.toUpperCase() as GameDifficulty;
+  const setDifficulty = (value: GameDifficulty) => kitStore.update({difficulty:value.toLowerCase()});
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [funFact, setFunFact] = useState<string>('');
   const [showConfetti, setShowConfetti] = useState(false);
-  const [language, setLanguage] = useState<Language>('IT');
-  const [theme, setTheme] = useState<Theme>('light');
-  const [isMuted, setIsMuted] = useState(false);
+  const language = kitPreferences.language.toUpperCase() as Language;
+  const setLanguage = (value: Language) => kitStore.update({language:value.toLowerCase()});
+
+  const isMuted = kitPreferences.muted;
+  const setIsMuted = (value: boolean) => kitStore.update({muted:value});
   
   const pendingFactPromise = useRef<Promise<string> | null>(null);
   const t = getStrings(language);
@@ -25,8 +30,8 @@ export const useGame = () => {
   const selectedItem = selectedId !== null ? currentItems.find(i => i.id === selectedId) || null : null;
 
   useEffect(() => {
-    audioService.setMuted(isMuted);
-  }, [isMuted]);
+    audioService.setPreferences(kitPreferences);
+  }, [kitPreferences]);
 
   const handleSpinEnd = (item: TimeItem) => {
     audioService.playTick();
@@ -107,7 +112,7 @@ export const useGame = () => {
     pendingFactPromise.current = null;
   };
 
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => kitStore.update({theme:theme === 'light' ? 'dark' : 'light'});
 
   return {
     mode, setMode,

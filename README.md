@@ -1,3 +1,5 @@
+> Impostazioni e controlli condivisi: [integrazione Videogames Kit](docs/videogames-kit.md).
+
 # 🎡 Giratempo! - Ruota del Tempo per Bambini
 
 **Giratempo!** è un'applicazione web educativa e interattiva progettata per insegnare ai bambini i giorni della settimana e i mesi dell'anno. Attraverso un design ispirato ai fumetti "Pop Art" e l'uso dell'Intelligenza Artificiale, trasforma l'apprendimento in un'avventura magica.

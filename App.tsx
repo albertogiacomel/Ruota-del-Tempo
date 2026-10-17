@@ -1,20 +1,20 @@
+import {GameKitControls} from './shared/game-kit';
 
 import React, { useState, useEffect } from 'react';
 import ReactConfetti from 'react-confetti';
 import { Wheel } from './components/Wheel';
 import { QuizArea } from './components/QuizArea';
 import { ComicPop, ComicBubble, ComicButton } from './components/ComicUI';
-import { SettingsMenu } from './components/SettingsMenu';
 import { getGameItems } from './config/constants';
 import { GameMode, GameState } from './types/index';
 import { useGame } from './useGame';
-import { Calendar, Sun, Play, Home, Settings, Volume2 } from 'lucide-react';
+import { Calendar, Sun, Play, Home, Volume2 } from 'lucide-react';
 import { audioService } from './services/audio';
 
 const App: React.FC = () => {
   const {
     mode, setMode,
-    difficulty, setDifficulty,
+    difficulty,
     gameState,
     selectedItem,
     isSpinning, setIsSpinning,
@@ -25,25 +25,19 @@ const App: React.FC = () => {
     triggerSpin,
     handleComplete,
     resetGame,
-    language, setLanguage,
-    theme, toggleTheme,
-    isMuted, setIsMuted,
+    language,
+    theme,
     t
   } = useGame();
 
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [showPop, setShowPop] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     window.addEventListener('resize', handleResize);
-    document.addEventListener('fullscreenchange', handleFsChange);
     return () => {
       window.removeEventListener('resize', handleResize);
-      document.removeEventListener('fullscreenchange', handleFsChange);
     };
   }, []);
 
@@ -73,16 +67,6 @@ const App: React.FC = () => {
     }
   }, [gameState]);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.warn(`Errore fullscreen: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
   const items = getGameItems(mode, language);
   const isWheelVisible = gameState === GameState.SPINNING;
   const isWheelLarge = isSpinning || (gameState === GameState.SPINNING && selectedItem !== null);
@@ -95,21 +79,7 @@ const App: React.FC = () => {
         {showConfetti && <ReactConfetti width={windowSize.width} height={windowSize.height} recycle={false} />}
         <ComicPop text={t.successPop} show={showPop} onClick={() => setShowPop(false)} />
         
-        <SettingsMenu 
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          language={language}
-          setLanguage={setLanguage}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          isMuted={isMuted}
-          setIsMuted={setIsMuted}
-          isFullscreen={isFullscreen}
-          toggleFullscreen={toggleFullscreen}
-          t={t}
-        />
+
         
         <header className={`${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-black'} border-b-[4px] md:border-b-[6px] z-50 px-4 py-2 md:py-3 shadow-sm flex-shrink-0 transition-all duration-500 transform ${isWheelLarge ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
           <div className="max-w-7xl mx-auto flex flex-row items-center justify-between">
@@ -129,16 +99,7 @@ const App: React.FC = () => {
                 </button>
               )}
 
-              <button 
-                onClick={() => {
-                  setIsSettingsOpen(true);
-                  audioService.playTick();
-                }}
-                className={`p-2 md:p-3 border-4 border-black rounded-xl md:rounded-2xl active-press shadow-comic-sm transition-all hover:scale-105 ${theme === 'dark' ? 'bg-slate-700 text-white' : 'bg-white text-slate-900'}`}
-                title={t.settingsTitle}
-              >
-                <Settings className="w-6 h-6 md:w-8 md:h-8" />
-              </button>
+              <GameKitControls gameId="ruota-del-tempo" />
             </div>
           </div>
         </header>

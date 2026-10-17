@@ -1,4 +1,3 @@
-
 {
   "name": "giratempo",
   "private": true,
@@ -6,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "build": "node scripts/game-kit-check.mjs && tsc && vite build",
+    "lint": "tsc --noEmit",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "check:kit": "node scripts/game-kit-check.mjs",
+    "test:kit": "node --test scripts/game-kit-test.mjs",
+    "test:kit:browser": "node scripts/game-kit-browser-test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
