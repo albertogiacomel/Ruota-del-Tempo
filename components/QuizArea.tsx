@@ -111,7 +111,7 @@ export const QuizArea: React.FC<QuizAreaProps> = ({ currentItem, allItems, onCom
             {t.fillInstruction}
           </p>
           
-          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-4 overflow-y-auto pr-1 flex-1 content-center relative z-10 pb-4">
+          <div className="ag-equal-items grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-4 overflow-y-auto pr-1 flex-1 content-center relative z-10 pb-4">
             {options.map((item) => {
                const isSelected = selectedPrev === item.label || selectedNext === item.label;
                return (
