@@ -39,6 +39,7 @@ export class InputManager {
     gamepad?: Record<string, { axis?: number; direction?: number; buttons?: number[] }>;
   });
   bindButton(element: HTMLElement, action: string): () => void;
+  readonly enabled: boolean;
   setEnabled(enabled: boolean): void; clear(): void; poll(): Readonly<Record<string, boolean>>; dispose(): void;
 }
 export class AudioManager {
@@ -80,6 +81,29 @@ export class SettingsDialog {
 export interface GameProfile {
   readonly gameId: string; readonly difficulties: readonly string[]; readonly difficulty: string;
   readonly channels: readonly ('effects' | 'music' | 'voice')[];
+  readonly defaults: Readonly<Partial<GameSettings>>;
+  readonly messages: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  readonly legacy: readonly LegacyPreferenceAdapter[];
 }
+export interface LegacyPreferenceAdapter { key: string; encoding?: 'text' | 'json'; fields: readonly {from: string; to: keyof GameSettings}[]; }
+export interface GameProfileDefinition {
+  gameId: string; difficulties?: readonly string[]; difficulty?: string;
+  channels?: readonly ('effects' | 'music' | 'voice')[]; defaults?: Partial<GameSettings>;
+  messages?: Record<string, Record<string, string>>; legacy?: readonly LegacyPreferenceAdapter[];
+}
+export function registerGameProfile(definition: GameProfileDefinition): GameProfile;
+export function getGameProfile(gameId: string): GameProfile;
+export function listGameProfiles(): readonly GameProfile[];
 export const GAME_PROFILES: Readonly<Record<string, GameProfile>>;
 export function createGameSettings(gameId: string, options?: Omit<SettingsOptions, 'gameId' | 'difficulties'>): SettingsStore;
+
+export interface LifecycleOptions {
+  input?: Pick<InputManager, 'enabled' | 'setEnabled' | 'clear'>;
+  loop?: Pick<FixedStepLoop, 'running' | 'start' | 'stop'>; audio?: Pick<AudioManager, 'stop'>;
+  onPause?: () => void; onResume?: () => void; document?: Document; target?: EventTarget; pauseOnBlur?: boolean;
+}
+export class GameLifecycleController {
+  constructor(options?: LifecycleOptions);
+  readonly paused: boolean; readonly reasons: readonly string[];
+  pause(reason?: string): void; resume(reason?: string): void; dispose(): void;
+}
