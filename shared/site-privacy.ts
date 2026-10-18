@@ -11,3 +11,21 @@ export function subscribeOptionalConsent(listener: () => void): () => void {
   window.addEventListener('siteprivacychange', listener);
   return () => window.removeEventListener('siteprivacychange', listener);
 }
+
+export interface ConsentModeV2State {
+  ad_storage: 'granted' | 'denied';
+  analytics_storage: 'granted' | 'denied';
+  ad_user_data: 'granted' | 'denied';
+  ad_personalization: 'granted' | 'denied';
+}
+
+export function getConsentModeV2State(): ConsentModeV2State {
+  const adAllowed = hasOptionalConsent('advertising');
+  const analyticsAllowed = hasOptionalConsent('analytics');
+  return {
+    ad_storage: adAllowed ? 'granted' : 'denied',
+    analytics_storage: analyticsAllowed ? 'granted' : 'denied',
+    ad_user_data: adAllowed ? 'granted' : 'denied',
+    ad_personalization: adAllowed ? 'granted' : 'denied',
+  };
+}
