@@ -1,5 +1,5 @@
 import type * as React from 'react';
-import type { SettingsStore, GameSettings } from '../src/index.mjs';
+import type { SettingsStore, GameSettings } from '../src/index.js';
 export function createReactBindings(react: typeof React): {
   useSettings(store: SettingsStore, serverSnapshot?: () => Readonly<GameSettings>): Readonly<GameSettings>;
   useController<T extends { dispose(): void | Promise<void> }>(

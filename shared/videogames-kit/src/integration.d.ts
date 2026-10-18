@@ -1,5 +1,5 @@
-import type { SettingsStore, StorageLike, GameSettings, AudioManager, FullscreenController, AppearanceController, SettingsDialog, I18n } from './index.mjs';
-import type { GameLifecycleController } from './index.mjs';
+import type { SettingsStore, StorageLike, GameSettings, AudioManager, FullscreenController, AppearanceController, SettingsDialog, I18n } from './index.js';
+import type { GameLifecycleController } from './index.js';
 export function createIntegratedSettings(gameId: string, options?: { storage?: StorageLike | (() => StorageLike); onError?: (error: unknown, operation: string) => void }): SettingsStore;
 export function getGameSettings(gameId: string): SettingsStore;
 export function getGameController(gameId: string): GameUIController | undefined;

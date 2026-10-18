@@ -1,4 +1,4 @@
-import { getGameSettings, GameUIController } from '../src/integration.mjs';
+import { getGameSettings, GameUIController } from '../src/integration.js';
 
 export function createGameBindings(React) {
   const subscribeMedia = listener => {

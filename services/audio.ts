@@ -1,4 +1,4 @@
-import type {GameSettings} from '../shared/videogames-kit/src/index.mjs';
+import type {GameSettings} from '../shared/videogames-kit/src/index.js';
 import { hasOptionalConsent } from '../shared/site-privacy';
 
 import { GoogleGenAI, Modality } from "@google/genai";
