@@ -1,4 +1,5 @@
 import type {GameSettings} from '../shared/videogames-kit/src/index.mjs';
+import { hasOptionalConsent } from '../shared/site-privacy';
 
 import { GoogleGenAI, Modality } from "@google/genai";
 
@@ -132,7 +133,7 @@ export const audioService = {
     }
 
     const apiKey = process.env.API_KEY;
-    if (!apiKey || apiKey === 'undefined') return;
+    if (!apiKey || apiKey === 'undefined' || !hasOptionalConsent('google-ai')) return;
     
     try {
       const ai = new GoogleGenAI({ apiKey });
@@ -148,7 +149,7 @@ export const audioService = {
       });
       
       const base64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64) {
+      if (base64 && hasOptionalConsent('google-ai')) {
         const raw = decode(base64);
         await saveToDB(key, raw);
         const buffer = await decodeAudioData(raw, getSfxCtx());
@@ -194,6 +195,11 @@ export const audioService = {
     if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = lang === 'IT' ? 'it-IT' : 'en-US';
+    if (!hasOptionalConsent('google-ai')) {
+      const voice = window.speechSynthesis.getVoices().find(v => v.localService && v.lang.toLowerCase().startsWith(lang.toLowerCase()));
+      if (!voice) return;
+      utter.voice = voice;
+    }
     utter.rate = 1.0;
     window.speechSynthesis.speak(utter);
   }

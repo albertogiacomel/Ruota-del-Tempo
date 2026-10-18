@@ -1,5 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { hasOptionalConsent } from './shared/site-privacy';
 import { TimeItem, Language, GameDifficulty } from "./types/index";
 
 // BANCA DELLE RIME LOCALE (Fallback immediato)
@@ -54,7 +55,7 @@ export const generateFunFact = async (item: string, fallbackErrorText: string, l
                         `${fallbackErrorText} ${item}!`;
 
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === 'undefined') {
+  if (!apiKey || apiKey === 'undefined' || !hasOptionalConsent('google-ai')) {
     return localFallback;
   }
 
