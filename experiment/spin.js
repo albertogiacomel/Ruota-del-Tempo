@@ -12,6 +12,12 @@ export function indexAtPointer(angle, count) {
   return Math.round(normalizeAngle(angle) / TAU * count) % count;
 }
 
+/** Detent flex depends on angle and angular velocity, never the frame rate. */
+export function pointerDeflection(angle,count,angularSpeed) {
+  const contact=Math.max(0,-Math.cos(angle*count));
+  return .26*Math.min(1,Math.abs(angularSpeed)/6)*contact**2*Math.sign(angularSpeed);
+}
+
 /** Active elapsed time only: settings and hidden tabs cannot complete a spin. */
 export class SpinClock {
   constructor({ from, to, duration, now }) {
@@ -22,7 +28,7 @@ export class SpinClock {
     if (!this.paused) this.elapsed += Math.max(0, now - this.last);
     this.last = now;
     const progress = Math.min(1, this.elapsed / this.duration);
-    return { angle: this.from + (this.to - this.from) * (1 - (1 - progress) ** 4), done: progress === 1 };
+    return { angle: this.from + (this.to - this.from) * (1 - (1 - progress) ** 4), angularSpeed:this.paused?0:4*(this.to-this.from)/this.duration*1000*(1-progress)**3, done: progress === 1 };
   }
   pause(now) { this.sample(now); this.paused = true; }
   resume(now) { this.last = now; this.paused = false; }

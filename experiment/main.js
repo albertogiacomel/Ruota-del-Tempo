@@ -4,7 +4,7 @@ import { getGameItems } from '../config/constants.ts';
 import { getStrings } from '../i18n/index.ts';
 import { getNeighbors, getQuizOptions, LOCAL_RHYMES } from '../gameEngine.ts';
 import { GameUIController, getGameSettings } from '../shared/videogames-kit/src/integration.js';
-import { SpinClock, spinTarget, TAU, normalizeAngle } from './spin.js';
+import { SpinClock, spinTarget, TAU, normalizeAngle, indexAtPointer } from './spin.js';
 import '../shared/videogames-kit/styles/game-ui.css';
 import '../shared/videogames-kit/styles/integration.css';
 import './style.css';
@@ -32,7 +32,8 @@ function Game() {
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   let canvas, controls, heading, wheel, clock, frame = 0, disposed = false, resultIndex;
   let currentAngle = 0;
-  const paint = value => { currentAngle = value; setAngle(value); wheel?.setAngle(value); };
+  let lastDetent=-1,lastClick=0;
+  const paint = (value,speed=0) => { currentAngle = value; setAngle(value); wheel?.setAngle(value,speed); };
   const pause = () => {
     setPaused(true); clock?.pause(performance.now()); cancelAnimationFrame(frame);
   };
@@ -43,7 +44,12 @@ function Game() {
   const kit = new GameUIController({ gameId: 'ruota-del-tempo', root: document.getElementById('root'), onOpen: pause, onClose: resume });
   const tick = now => {
     if (disposed || paused() || !clock) return;
-    const sample = clock.sample(now); paint(sample.angle);
+    const sample = clock.sample(now); paint(sample.angle,sample.angularSpeed);
+    const detent=indexAtPointer(sample.angle,items().length);
+    if(!sample.done&&detent!==lastDetent&&now-lastClick>=70){
+      kit.audio.tone({frequencies:[1400],duration:.018,volume:.018,wave:'triangle'});lastClick=now;
+    }
+    lastDetent=detent;
     if (!sample.done) { frame = requestAnimationFrame(tick); return; }
     clock = undefined; paint(normalizeAngle(currentAngle));
     setWinner(items()[resultIndex].id); setPhase('question');
@@ -54,8 +60,9 @@ function Game() {
     if (phase() !== 'ready' || paused()) return;
     setBefore(null); setAfter(null); setFeedback(''); setWinner(null);
     resultIndex = Math.floor(Math.random() * items().length);
+    lastDetent=indexAtPointer(currentAngle,items().length);lastClick=performance.now();
     const reduced = preferences().motion === 'reduced' || (preferences().motion === 'system' && motionQuery.matches);
-    clock = new SpinClock({from:currentAngle,to:spinTarget(currentAngle,resultIndex,items().length),duration:reduced?120:3600,now:performance.now()});
+    clock = new SpinClock({from:currentAngle,to:spinTarget(currentAngle,resultIndex,items().length),duration:reduced?1:4200,now:performance.now()});
     setPhase('spinning'); kit.audio.tone({frequencies:[330,440,550],duration:.08});
     frame = requestAnimationFrame(tick);
   };
@@ -83,6 +90,7 @@ function Game() {
   // Reuse the same preference store and settings UI as the React entry, without mounting React.
   createEffect(() => true, () => { controls.append(kit.controls); });
   createEffect(() => items(), value => { wheel?.setItems(value); wheel?.setAngle(currentAngle); });
+  createEffect(() => winner(), value => { wheel?.select(value); });
   createEffect(() => [lang(), preferences().difficulty], () => { setBefore(null); setAfter(null); setFeedback(''); });
   createEffect(() => phase(), value => {
     if ((value === 'question' || value === 'success') && !paused()) heading?.focus();
@@ -97,7 +105,7 @@ function Game() {
       const {createWheel} = await import('./wheel.js');
       if (disposed) return;
       wheel = createWheel(value, () => fallback('fallback'));
-      wheel.setItems(items()); wheel.setAngle(currentAngle); setRendererMode('3d');
+      wheel.setItems(items()); wheel.setAngle(currentAngle); wheel.select(winner()); setRendererMode('3d');
     } catch (error) {
       // Rendering is optional: rules and all controls remain available through SVG.
       if (!disposed) { fallback('fallback'); document.getElementById('root').dataset.rendererFailure = error.name; }
@@ -131,7 +139,7 @@ function Game() {
           <canvas ref={canvas} hidden={rendererMode()!=='3d'}/>
           <svg viewBox="0 0 400 400" hidden={rendererMode()==='3d'}>
             <g style={{'transform-origin':'200px 200px',transform:`rotate(${-angle()*180/Math.PI}deg)`}}>
-              {items().map((item,index)=><g><path d={sector(index)} fill={item.color} stroke="#fff" stroke-width="2"/><text transform={`rotate(${index*360/items().length} 200 200)`} x="200" y="76" text-anchor="middle" fill="#14213b" stroke="#fff" stroke-width="3" paint-order="stroke" font-size={items().length>7?'12':'15'} font-weight="800">{item.label}</text></g>)}
+              {items().map((item,index)=><g><path d={sector(index)} fill={item.color} stroke={winner()===item.id?'#ffe09b':'#fff'} stroke-width={winner()===item.id?'7':'2'}/><text transform={`rotate(${index*360/items().length} 200 200)`} x="200" y="76" text-anchor="middle" fill="#14213b" stroke="#fff" stroke-width="3" paint-order="stroke" font-size={items().length>7?'12':'15'} font-weight="800">{item.label}</text></g>)}
               <circle cx="200" cy="200" r="24" fill="#fff4c2" stroke="#18243c" stroke-width="4"/>
             </g><path d="M187 9H213L200 36Z" fill="#e94662" stroke="#18243c" stroke-width="3"/>
           </svg>

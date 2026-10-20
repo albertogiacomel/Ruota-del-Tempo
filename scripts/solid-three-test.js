@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { spinTarget, indexAtPointer, SpinClock, TAU } from '../experiment/spin.js';
+import { spinTarget, indexAtPointer, SpinClock, TAU, pointerDeflection } from '../experiment/spin.js';
 
 test('every days/months outcome matches the actual pointer after repeated spins', () => {
   for (const count of [7,12]) {
@@ -21,5 +21,13 @@ test('settings/visibility pause cannot skip the outcome or consume spin time', (
   const frozen=clock.sample(9000);
   assert.equal(frozen.done,false);
   clock.resume(10000);
-  assert.deepEqual(clock.sample(10700),{angle:100,done:true});
+  assert.deepEqual(clock.sample(10700),{angle:100,angularSpeed:0,done:true});
+});
+test('mechanical pointer rests when stopped and stays within its physical travel',()=>{
+  for(const count of [7,12])for(let i=0;i<1000;i++){
+    const angle=i*.1;
+    assert.equal(pointerDeflection(angle,count,0),0);
+    assert.ok(Math.abs(pointerDeflection(angle,count,100))<=.26);
+    assert.equal(pointerDeflection(angle,count,-20),-pointerDeflection(angle,count,20));
+  }
 });

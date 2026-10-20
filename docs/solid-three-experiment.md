@@ -96,3 +96,34 @@ si verificano direttamente le Actions GitHub sullo SHA pubblicato.
 Fonti: [Solid 2 RC](https://github.com/solidjs/solid/discussions/2995),
 [compilatore Babel ufficiale](https://github.com/solidjs/solid/tree/main/packages/babel-plugin),
 [rendering Three su richiesta](https://threejs.org/manual/pages/rendering-on-demand.html).
+
+## Ruota e selettore 3D: rifinitura del 21 ottobre
+
+La ruota ha ora corpo estruso, doppio bordo metallico, rivetti istanziati e
+mozzo con stella. Il selettore è un gruppo 3D con supporto, perno e lama
+smussata: la flessione dipende da angolo e velocità angolare, senza dipendere
+dal frame rate. A fine giro torna a riposo; il settore vincente è evidenziato
+anche nel fallback SVG. Gli scatti sonori rispettano mute, canali e pausa.
+Con movimento ridotto il risultato compare senza la sequenza di rotazioni.
+
+I settori colorati sono uniti in una geometria; i rivetti condividono una
+`InstancedMesh`. Il test browser misura 15 draw call a risultato visibile,
+al massimo 30 geometrie e 3 texture, comprendendo la texture interna di Three,
+attraverso quattro combinazioni di modalità e lingua. La cache mantiene due
+modelli e rilascia le risorse del modello sostituito.
+
+| Stesso carico di 60 cambi modalità | Prima rifinitura | Dopo rifinitura |
+|---|---:|---:|
+| mean ms | 1,488 | 1,575 |
+| p50 ms | 0,800 | 0,900 |
+| p95 ms | 2,300 | 1,800 |
+| ops/s | 672 | 635 |
+| speedup medio | 1,00× | 0,94× |
+
+Il costo medio cresce del 5,8%, entro 0,1 ms in questo campione; il p95 cala
+del 21,7%. Non è una misura di FPS o una garanzia di miglioramento prestazionale.
+Il JavaScript gzip della prova passa da circa 192,3 a 196,1 kB.
+Le evidenze riproducibili sono `benchmark-polish-before.json`,
+`benchmark-polish-after.json` e `verification.json` in `artifacts/solid-three/`.
+Passano test della matematica del puntatore, gioco completo e budget GPU sia
+con la build di produzione sia con il server Vite di sviluppo.
