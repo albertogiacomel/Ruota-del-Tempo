@@ -1,0 +1,114 @@
+{
+  "task_id": "solid-three-wheel",
+  "agent": "codex",
+  "summary": "Implemented and locally verified a separate playable Solid 2 RC.16 and Three.js wheel, preserving the React entry and shared preferences.",
+  "session_id": "solid-three-20261020",
+  "scope": "C:/Users/albyw/source/Ruota-del-Tempo; NAS KB/closure bridge only; NAS CBMM does not index this Windows repository.",
+  "changes": [
+    {
+      "target": "experiment/ and solid-three.html",
+      "what": "Solid UI, lazily imported 3D wheel, deterministic pointer mapping, capped two-model cache, on-demand drawing, independent pause reasons, SVG fallback and cleanup.",
+      "evidence": "scripts/solid-three-test.js and scripts/solid-three-browser-test.js; artifacts/solid-three/verification.json"
+    },
+    {
+      "target": "vite.config.ts and package.json",
+      "what": "Isolated official Solid Babel transform on existing Vite; exact RC versions; Node >=22.12; artifacts excluded from Windows dev watcher.",
+      "evidence": "npm run build; production and dev browser verification; nine preexisting npm audit findings unchanged."
+    },
+    {
+      "target": ".github/workflows/ci.yml",
+      "what": "Added math/clock and full browser experiment checks to required workflow.",
+      "evidence": "Exact pushed SHA Actions results collected after commit in artifacts/solid-three/remote-ci.json."
+    }
+  ],
+  "benchmark": [
+    {
+      "name": "mode switch mean",
+      "before": 0.3533333313961824,
+      "after": 1.4966666668653488,
+      "source": "artifacts/solid-three/benchmark-before.json and benchmark-after.json; same 60-click workload, different UI layouts, not an isolated framework benchmark",
+      "unit": "ms",
+      "metric_family": "latency"
+    },
+    {
+      "name": "mode switch p50",
+      "before": 0.29999999701976776,
+      "after": 0.8999999910593033,
+      "source": "artifacts/solid-three/benchmark-before.json and benchmark-after.json; same 60-click workload, different UI layouts, not an isolated framework benchmark",
+      "unit": "ms",
+      "metric_family": "latency"
+    },
+    {
+      "name": "mode switch p95",
+      "before": 0.699999988079071,
+      "after": 1.9000000059604645,
+      "source": "artifacts/solid-three/benchmark-before.json and benchmark-after.json; same 60-click workload, different UI layouts, not an isolated framework benchmark",
+      "unit": "ms",
+      "metric_family": "latency"
+    },
+    {
+      "name": "mode switch ops_per_second",
+      "before": 2830.1886947618,
+      "after": 668.151447572773,
+      "source": "artifacts/solid-three/benchmark-before.json and benchmark-after.json; same 60-click workload, different UI layouts, not an isolated framework benchmark",
+      "unit": "ops/s",
+      "metric_family": "latency"
+    },
+    {
+      "name": "classic mode switch mean",
+      "before": 0.3533333313961824,
+      "after": 0.3633333330353101,
+      "source": "scripts/solid-three-benchmark.js; classic before and after",
+      "unit": "ms",
+      "metric_family": "latency"
+    }
+  ],
+  "improvements": [
+    {
+      "rank": 1,
+      "area": "Physical mobile validation",
+      "problem": "Software-rendered headless browser does not measure phone GPU, battery or subjective readability.",
+      "proposals": [
+        "Evaluate the trial on a physical phone before making it the default."
+      ],
+      "impact": "high",
+      "effort": "low"
+    },
+    {
+      "rank": 2,
+      "area": "3D network budget",
+      "problem": "Trial needs about 697 kB application JS versus 278 kB classic.",
+      "proposals": [
+        "Keep the trial separate and load Three only on its dedicated entry."
+      ],
+      "impact": "medium",
+      "effort": "medium"
+    },
+    {
+      "rank": 3,
+      "area": "Existing toolchain security",
+      "problem": "Nine preexisting npm audit findings remain in Vite/Tailwind dependencies.",
+      "proposals": [
+        "Plan a separate tested major-version toolchain upgrade."
+      ],
+      "impact": "high",
+      "effort": "high"
+    }
+  ],
+  "decision": {
+    "question": "Priorità automatica raccomandata, senza richiesta di risposta all utente.",
+    "options": [
+      {
+        "label": "Valutare la prova su telefono fisico prima di promuoverla.",
+        "recommended": true
+      },
+      {
+        "label": "Mantenere la versione classica come ingresso principale.",
+        "recommended": false
+      }
+    ]
+  },
+  "schema": "task-closure-v1",
+  "benchmark_status": "measured",
+  "benchmark_reason": ""
+}

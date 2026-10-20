@@ -14,8 +14,13 @@ jobs:
       - run: node node_modules/typescript/bin/tsc --noEmit
       - run: npm run build
       - run: npm run test:kit
+      - run: npm run test:experiment
       - name: Verify controls and gameplay in Chrome
         run: npm run test:kit:browser
+        env:
+          BROWSER_BINARY: /usr/bin/google-chrome
+      - name: Verify Solid and Three wheel experiment
+        run: npm run test:experiment:browser
         env:
           BROWSER_BINARY: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v7
@@ -25,3 +30,5 @@ jobs:
           path: |
             artifacts/game-kit/*.json
             artifacts/game-kit/*.png
+            artifacts/solid-three/*.json
+            artifacts/solid-three/*.png

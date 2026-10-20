@@ -28,7 +28,7 @@
 Il progetto è ottimizzato per **Vite**.
 
 ### Prerequisiti
-Node.js (v18+) e una chiave API di Google AI Studio.
+Node.js 22.12+; la chiave Google AI Studio è opzionale per le funzioni AI della versione classica.
 
 ### Installazione
 1. Installa le dipendenze:
@@ -47,6 +47,11 @@ API_KEY=la_tua_chiave_gemini
 ```bash
 npm run dev
 ```
+
+La prova **Solid 2 RC + Three.js** è disponibile su `/solid-three.html`.
+Mantiene giorni, mesi, quiz bilingue e impostazioni condivise, con fallback SVG
+quando WebGL non è disponibile. La versione React resta su `/index.html`.
+Per confronto, verifiche e limiti consultare [il report della prova](docs/solid-three-experiment.md).
 
 ## 🧠 Logica Didattica
 
