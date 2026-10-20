@@ -127,3 +127,33 @@ Le evidenze riproducibili sono `benchmark-polish-before.json`,
 `benchmark-polish-after.json` e `verification.json` in `artifacts/solid-three/`.
 Passano test della matematica del puntatore, gioco completo e budget GPU sia
 con la build di produzione sia con il server Vite di sviluppo.
+
+## Selettore classico e menu Solid
+
+La pagina classica espone un selettore 2D/3D con due destinazioni reali,
+controlli di almeno 44 px e stato corrente accessibile. Le preferenze sono
+condivise fra le pagine. Nella versione 3D anche toolbar, impostazioni e
+conferma di ripristino sono componenti Solid 2 RC. Il kit comune conserva
+i servizi di audio, fullscreen, input, tema e persistenza; il widget privacy
+condiviso conserva la propria gestione.
+
+La build percorre le dipendenze della pagina sperimentale e fallisce se
+trova React o i suoi adapter. Verifica inoltre la presenza del runtime Solid
+e del modulo impostazioni, emettendo `solid-runtime.json` come ricevuta.
+Il test browser copre navigazione 2D/3D da tastiera, persistenza, conferma
+annullabile, focus circolare comprendente i controlli privacy e geometria
+del dialogo alle larghezze 1280, 390 e 320 px.
+
+| 60 cambi modalità, stesso browser e carico | Prima menu Solid | Dopo |
+|---|---:|---:|
+| mean ms | 1,642 | 1,515 |
+| p50 ms | 1,000 | 1,000 |
+| p95 ms | 2,600 | 2,300 |
+| ops/s | 609 | 660 |
+| speedup medio | 1,00× | 1,08× |
+
+Sono tempi locali fino alla prima mutazione DOM, soggetti al rumore del
+browser; non isolano il costo dei menu e non dimostrano una superiorità del
+framework. Il JavaScript gzip della prova cresce da circa 196,1 a 199,5 kB.
+I dati sono `benchmark-solid-menus-before.json` e
+`benchmark-solid-menus-after.json` in `artifacts/solid-three/`.

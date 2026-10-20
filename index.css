@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+.classic-view-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:160px;gap:4px;margin:8px auto 0;padding:3px;border:2px solid #17233b;border-radius:12px;background:#fff;color:#17233b;font:800 16px/1 system-ui,sans-serif}
+.classic-view-switch a{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;border:2px solid transparent;border-radius:8px;text-decoration:none;color:inherit}
+.classic-view-switch a[aria-current=page]{background:#ffd34d;border-color:#17233b}
+.classic-view-switch a:focus-visible{outline:3px solid #1768c7;outline-offset:3px}
+.dark .classic-view-switch{background:#182237;border-color:#a9b8d0;color:#fff}
+.dark .classic-view-switch a[aria-current=page]{color:#17233b}
+
 :root {
   --comic-black: #000000;
 }

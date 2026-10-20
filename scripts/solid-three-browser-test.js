@@ -10,6 +10,13 @@ const expectedOrigin=process.env.TRIAL_BASE_URL?new URL(process.env.TRIAL_BASE_U
 if(process.env.TRIAL_BASE_URL)await command('Page.navigate',{url:new URL('/solid-three.html',process.env.TRIAL_BASE_URL).href});
 const wait=async expression=>{for(let i=0;i<300;i++){if(await evaluate(expression))return;await delay(30);}throw new Error('Trial condition: '+expression+' errors: '+JSON.stringify(page.errors));};
 const click=selector=>evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+const press=async(key,code,vk,modifiers=0)=>{await command('Input.dispatchKeyEvent',{type:'keyDown',key,code,windowsVirtualKeyCode:vk,modifiers,...(key==='Enter'?{text:'\r'}:{})});await command('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk,modifiers});};
+const realClick=async selector=>{
+  const point=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  await command('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
+  await command('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
+};
+const change=(name,value)=>evaluate(`(()=>{const e=document.querySelector('[data-setting=${name}]');${typeof value==='boolean'?'e.checked':'e.value'}=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`);
 try{
   await wait(`location.origin===${JSON.stringify(expectedOrigin)}&&Boolean(window.__gameKit)&&Boolean(document.querySelector("[data-spin]"))`);
   await evaluate('window.__gameKit.settings.update({language:"it",motion:"reduced",muted:true})');
@@ -17,12 +24,36 @@ try{
   assert.equal(await evaluate('document.querySelector(".trial-app").dataset.renderer'),'3d','Exercise real Three rendering in the browser');
   assert.equal(await evaluate('document.querySelector("[data-mode=DAYS]").getAttribute("aria-pressed")'),'true');
   await evaluate('[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="Rifiuta facoltativi")?.click()');
+  assert.equal(await evaluate('window.__gameKit.dialog.element.dataset.uiFramework'),'solid-2');
+  await delay(300);await realClick('[data-kit-settings]');await wait('window.__gameKit.dialog.element.open');
+  await change('language','en');await wait('document.documentElement.lang==="en"&&document.querySelector("#solid-settings-title").textContent==="Settings"');
+  await change('theme','dark');await wait('document.documentElement.classList.contains("dark")');
+  assert.equal(await evaluate('document.querySelector("[data-setting=effects]").disabled'),true,'Muted disables channels');
+  await change('muted',false);await wait('!document.querySelector("[data-setting=voice]").disabled');
+  await change('muted',true);await change('difficulty','medium');
+  const preferencesBeforeReset=await evaluate('JSON.stringify(window.__gameKit.settings.getSnapshot())');
+  await realClick('[data-reset-settings]');await wait('!document.querySelector(".ag-reset-confirm").hidden');
+  await press('Escape','Escape',27);
+  await wait('document.querySelector(".ag-reset-confirm").hidden&&window.__gameKit.dialog.element.open');
+  assert.equal(await evaluate('JSON.stringify(window.__gameKit.settings.getSnapshot())'),preferencesBeforeReset,'Cancel reset preserves settings');
+  const lastControl='[...document.querySelectorAll("#solid-settings button:not(:disabled),#solid-settings select:not(:disabled),#solid-settings input:not(:disabled),#solid-settings a[href]")].filter(e=>!e.closest("[hidden]")).at(-1)';
+  await evaluate(lastControl+'.focus()');await press('Tab','Tab',9);
+  assert.equal(await evaluate('document.activeElement===document.querySelector("#solid-settings header button")'),true,'Dialog traps forward Tab, including appended privacy controls');
+  await press('Tab','Tab',9,8);
+  assert.equal(await evaluate('document.activeElement==='+lastControl),true,'Dialog traps reverse Tab');
+  await press('Escape','Escape',27);await wait('!window.__gameKit.dialog.element.open');
+  await evaluate('window.__gameKit.settings.update({language:"it",difficulty:"easy",theme:"light"})');await delay(50);
   for(const width of [1280,390,320]){
     await command('Emulation.setDeviceMetricsOverride',{width,height:width===1280?900:844,deviceScaleFactor:1,mobile:width!==1280});await delay(150);
     assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'),'No horizontal overflow at '+width);
     const widths=await evaluate('[...document.querySelectorAll(".trial-mode button")].map(e=>e.getBoundingClientRect().width)');
     assert.ok(Math.max(...widths)-Math.min(...widths)<=1,'Equal modes');
     await writeFile(join(page.artifacts,`trial-${width}.png`),Buffer.from((await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));
+    await click('[data-kit-settings]');await wait('window.__gameKit.dialog.element.open');
+    const geometry=await evaluate('(()=>{const e=window.__gameKit.dialog.element;return {fits:e.scrollWidth<=e.clientWidth,widths:[...e.querySelectorAll("fieldset")].map(n=>n.getBoundingClientRect().width)}})()');
+    assert.ok(geometry.fits&&Math.max(...geometry.widths)-Math.min(...geometry.widths)<=1,'Solid settings equal widths and no overflow');
+    await writeFile(join(page.artifacts,`solid-settings-${width}.png`),Buffer.from((await command('Page.captureScreenshot',{format:'png'})).data,'base64'));
+    await press('Escape','Escape',27);await wait('!window.__gameKit.dialog.element.open');
   }
   for(const mode of ['DAYS','MONTHS'])for(const language of ['it','en']){
     await evaluate(`window.__gameKit.settings.update({language:${JSON.stringify(language)}})`);await delay(50);
@@ -86,6 +117,20 @@ try{
   await command('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
   await wait('!window.__gameKit.dialog.element.open&&document.activeElement.hasAttribute("data-kit-settings")');
   assert.equal(await evaluate('window.__gameKit.settings.getSnapshot().language'),'en');
+  // Follow the real classic -> Solid link with the keyboard and retain shared settings.
+  await evaluate('window.__navigationPending=true;document.querySelector("a.trial-brand").click()');
+  await wait('!window.__navigationPending&&location.pathname==="/index.html"&&Boolean(document.querySelector(".classic-view-switch"))');
+  for(const width of [1280,390,320]){
+    await command('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width!==1280});await delay(75);
+    const boxes=await evaluate('[...document.querySelectorAll(".classic-view-switch a")].map(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height,current:e.getAttribute("aria-current"),href:e.getAttribute("href")}})');
+    assert.ok(boxes.every(b=>b.x>=0&&b.right<=width&&b.y>=0&&b.bottom<=844&&b.height>=44),'Visible version switch at '+width);
+    assert.ok(Math.abs(boxes[0].width-boxes[1].width)<=1);assert.equal(boxes[0].current,'page');assert.equal(boxes[1].href,'/solid-three.html');
+    await writeFile(join(page.artifacts,`classic-switch-${width}.png`),Buffer.from((await command('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  }
+  await evaluate('window.__navigationPending=true;document.querySelector(".classic-view-switch a:last-child").focus()');
+  await press('Enter','Enter',13);
+  await wait('!window.__navigationPending&&location.pathname==="/solid-three.html"&&Boolean(window.__gameKit)&&document.querySelector("#solid-settings")?.dataset.uiFramework==="solid-2"');
+  assert.equal(await evaluate('window.__gameKit.settings.getSnapshot().language'),'en','Version switch retains language');
   assert.deepEqual(page.errors,[]);
   await writeFile(join(page.artifacts,'verification.json'),JSON.stringify({status:'PASS',timestamp:new Date().toISOString(),environment:process.env.TRIAL_BASE_URL||'built-dist',checks:['real Three renderer','desktop/mobile 1280/390/320','real touch activation','four bilingual days/months rounds','winner highlight and pointer rest','mechanical pointer movement','bounded GPU cache and draw calls','wrong/correct answers','double spin guard','pause reasons','context-loss SVG fallback','initial WebGL denial fallback','preference persistence','Escape and focus restore'],gpuSamples,errors:page.errors},null,2),'utf8');
   console.log('PASS Solid/Three gameplay, responsive layout, pause and renderer fallback');

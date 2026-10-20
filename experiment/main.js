@@ -3,7 +3,8 @@ import { render } from '@solidjs/web';
 import { getGameItems } from '../config/constants.ts';
 import { getStrings } from '../i18n/index.ts';
 import { getNeighbors, getQuizOptions, LOCAL_RHYMES } from '../gameEngine.ts';
-import { GameUIController, getGameSettings } from '../shared/videogames-kit/src/integration.js';
+import { getGameSettings } from '../shared/videogames-kit/src/integration.js';
+import { createSolidGameUI } from './settings.js';
 import { SpinClock, spinTarget, TAU, normalizeAngle, indexAtPointer } from './spin.js';
 import '../shared/videogames-kit/styles/game-ui.css';
 import '../shared/videogames-kit/styles/integration.css';
@@ -30,7 +31,7 @@ function Game() {
   const options = createMemo(() => selected() ? getQuizOptions(selected(), items(), preferences().difficulty.toUpperCase()) : []);
   const rhyme = () => LOCAL_RHYMES[lang()][selected()?.label] || '';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-  let canvas, controls, heading, wheel, clock, frame = 0, disposed = false, resultIndex;
+  let canvas, heading, wheel, clock, frame = 0, disposed = false, resultIndex;
   let currentAngle = 0;
   let lastDetent=-1,lastClick=0;
   const paint = (value,speed=0) => { currentAngle = value; setAngle(value); wheel?.setAngle(value,speed); };
@@ -41,7 +42,7 @@ function Game() {
     setPaused(false);
     if (clock) { clock.resume(performance.now()); frame = requestAnimationFrame(tick); }
   };
-  const kit = new GameUIController({ gameId: 'ruota-del-tempo', root: document.getElementById('root'), onOpen: pause, onClose: resume });
+  const {kit,Controls,Settings}=createSolidGameUI({settings,preferences,onPause:pause,onResume:resume});
   const tick = now => {
     if (disposed || paused() || !clock) return;
     const sample = clock.sample(now); paint(sample.angle,sample.angularSpeed);
@@ -87,8 +88,7 @@ function Game() {
     }
   };
   const unwatch = settings.subscribe(() => setPreferences(settings.getSnapshot()));
-  // Reuse the same preference store and settings UI as the React entry, without mounting React.
-  createEffect(() => true, () => { controls.append(kit.controls); });
+  // The same preference store feeds Solid controls and the independent Three renderer.
   createEffect(() => items(), value => { wheel?.setItems(value); wheel?.setAngle(currentAngle); });
   createEffect(() => winner(), value => { wheel?.select(value); });
   createEffect(() => [lang(), preferences().difficulty], () => { setBefore(null); setAfter(null); setFeedback(''); });
@@ -128,7 +128,7 @@ function Game() {
   return <div class="trial-app" data-renderer={rendererMode()} data-phase={phase()}>
     <header class="trial-header">
       <a class="trial-brand" href="/index.html" aria-label={english()?'GiraTempo classic':'GiraTempo classico'}><span aria-hidden="true">✦</span> GiraTempo<span class="trial-badge">3D</span></a>
-      <div class="trial-toolbar"><button type="button" onClick={() => { const next=!manualPause(); setManualPause(next); if(next)kit.lifecycle.pause('manual');else kit.lifecycle.resume('manual'); }} aria-pressed={String(manualPause())}>{manualPause()?(english()?'Resume':'Riprendi'):(english()?'Pause':'Pausa')}</button><div ref={controls}/></div>
+      <div class="trial-toolbar"><button type="button" onClick={() => { const next=!manualPause(); setManualPause(next); if(next)kit.lifecycle.pause('manual');else kit.lifecycle.resume('manual'); }} aria-pressed={String(manualPause())}>{manualPause()?(english()?'Resume':'Riprendi'):(english()?'Pause':'Pausa')}</button><div><Controls/></div></div>
     </header>
     <div class="trial-pause" role="status" hidden={!paused()}>{english()?'Game paused. Your spin is safe.':'Gioco in pausa. Il tuo giro ti aspetta.'}</div>
     <main class="trial-layout" inert={paused()}>
@@ -175,6 +175,7 @@ function Game() {
       </section>
     </main>
     <footer class="trial-footer"><span>{english()?'Learn by playing, one day at a time.':'Imparare giocando, un giorno alla volta.'}</span><a href="/index.html">{english()?'Classic version':'Versione classica'} ↗</a></footer>
+    <Settings/>
   </div>;
 }
 const dispose = render(() => <Game/>, document.getElementById('root'));

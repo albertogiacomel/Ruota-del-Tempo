@@ -102,6 +102,10 @@ const App: React.FC = () => {
               <GameKitControls gameId="ruota-del-tempo" />
             </div>
           </div>
+          <nav className="classic-view-switch" aria-label={language === 'IT' ? 'Versione della ruota' : 'Wheel version'}>
+            <a href="/index.html" aria-current="page" aria-label={language === 'IT' ? 'Ruota 2D, versione classica' : '2D wheel, classic version'}>2D</a>
+            <a href="/solid-three.html" aria-label={language === 'IT' ? 'Apri la ruota 3D' : 'Open the 3D wheel'}>3D <span aria-hidden="true">↗</span></a>
+          </nav>
         </header>
 
         <main className="flex-1 w-full relative z-10 flex flex-col items-center justify-center overflow-hidden px-4 md:px-8 py-2 md:py-4">
