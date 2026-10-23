@@ -74,7 +74,7 @@ Il test browser verifica il vero renderer Three, viewport 1280/390/320 px,
 touch reale tramite CDP, quattro partite bilingui complete, correzione degli
 errori, doppio giro, pausa, perdita del contesto, WebGL negato all'avvio,
 persistenza delle preferenze, Escape e ripristino del focus. Le stesse verifiche
-sono aggiunte alla CI GitHub. Screenshot e misure sono in `artifacts/solid-three/`.
+sono aggiunte alla CI GitHub. Screenshot e misure vengono generati localmente in `artifacts/solid-three/`, esclusa dal versionamento. I risultati citati di seguito restano la documentazione dell'esperimento; i file grezzi si rigenerano con gli script di verifica e benchmark. Gli artifact diagnostici della CI sono separati dai sorgenti e hanno retention limitata a tre giorni.
 Per testare anche Vite dev impostare `TRIAL_BASE_URL=http://127.0.0.1:5173`.
 
 ## Limiti e prossime priorità

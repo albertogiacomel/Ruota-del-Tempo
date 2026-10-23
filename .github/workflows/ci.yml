@@ -2,15 +2,24 @@ name: Verify Ruota-del-Tempo
 on: [push, pull_request]
 permissions:
   contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - run: npm ci
+      - name: Check repository hygiene
+        run: |
+          npm ci
+          node node_modules/typescript/bin/tsc -p tsconfig.hygiene.json
+          node --test scripts/check-repository-hygiene_test.ts
+          node scripts/check-repository-hygiene.ts
       - run: node node_modules/typescript/bin/tsc --noEmit
       - run: npm run build
       - run: npm run test:kit
@@ -27,6 +36,7 @@ jobs:
         if: always()
         with:
           name: game-kit-verification
+          retention-days: 3
           path: |
             artifacts/game-kit/*.json
             artifacts/game-kit/*.png

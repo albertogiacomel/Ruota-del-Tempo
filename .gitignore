@@ -36,6 +36,9 @@ yarn-error.log*
 *.sln
 *.sw?
 
-artifacts/
+/artifacts/*
+!/artifacts/README.md
+.wrangler/
+.vercel/
 
 .parcel-cache/
